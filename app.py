@@ -1,45 +1,43 @@
 import streamlit as st
-import json
+import requests
 import os
+import json
 
-st.set_page_config(page_title="UPI Analyzer", layout="centered")
-st.title("📊 UPI Financial Analyzer")
+st.set_page_config(page_title="UPI Analyzer")
+st.title("📊 UPI Financial Analyzer (Hosted via Langflow API)")
 
-# Upload input
-uploaded_file = st.file_uploader("📤 Upload your UPI transaction .txt file", type=["txt"])
+API_URL = "https://api.langflow.astra.datastax.com/lf/2eadbc26-1bb9-446f-a787-8c982df90ec8/api/v1/run/f3fd7a6e-7634-4d55-9a49-92c2f9a8e37f"
+API_TOKEN = st.secrets["ASTRA_API_TOKEN"] if "ASTRA_API_TOKEN" in st.secrets else os.getenv("ASTRA_API_TOKEN")
 
-# Check if langflow is available
-try:
-    from langflow.load import run_flow_from_json
-    langflow_available = True
-except ImportError:
-    st.error("❌ Langflow is not installed.")
-    langflow_available = False
+uploaded_file = st.file_uploader("Upload your UPI .txt file", type=["txt"])
 
-# Handle file upload
-if uploaded_file and langflow_available:
+if uploaded_file and API_TOKEN:
     raw_text = uploaded_file.read().decode("utf-8")
 
-    # Load the Langflow flow file
-    if not os.path.exists("upi_flow.json"):
-        st.error("❌ upi_flow.json is missing from your repo.")
-    else:
-        try:
-            with open("upi_flow.json", "r") as f:
-                flow_json = json.load(f)
+    payload = {
+        "input_value": raw_text,
+        "output_type": "chat",
+        "input_type": "text"
+    }
 
-            result = run_flow_from_json(flow_json, inputs={"text": raw_text})
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {API_TOKEN}"
+    }
 
-            st.subheader("📋 Financial Insights")
-            if isinstance(result, dict):
-                for key, value in result.items():
-                    st.markdown(f"### {key.replace('_', ' ').capitalize()}")
-                    if isinstance(value, dict):
-                        st.json(value)
-                    else:
-                        st.write(value)
+    try:
+        with st.spinner("🔍 Analyzing your UPI statement..."):
+            response = requests.post(API_URL, json=payload, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+
+            st.success("✅ Analysis Complete")
+            if "text" in data:
+                st.markdown(data["text"])
             else:
-                st.write(result)
-
-        except Exception as e:
-            st.error(f"⚠️ Something went wrong running the analysis:\n\n{e}")
+                st.write(data)
+    except Exception as e:
+        st.error(f"❌ Error: {e}")
+else:
+    if not API_TOKEN:
+        st.warning("🔑 ASTRA_API_TOKEN not set. Add it to Streamlit secrets or as an env variable.")
