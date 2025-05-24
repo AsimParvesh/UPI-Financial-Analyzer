@@ -1,37 +1,44 @@
 import streamlit as st
 import json
-from langflow.load import run_flow_from_json
+import os
 
-st.set_page_config(page_title="UPI Financial Analyzer", layout="centered")
-st.title("💸 UPI Financial Insights")
-st.markdown("Upload your UPI transaction statement (.txt) and get a complete financial breakdown + personalized advice.")
+# Try to import run_flow_from_json safely
+try:
+    from langflow.load import run_flow_from_json
+except ImportError:
+    st.error("❌ Langflow is not installed or available.")
+    st.stop()
 
-uploaded_file = st.file_uploader("📤 Upload UPI Text File", type=["txt"])
+st.set_page_config(page_title="UPI Analyzer", layout="centered")
+st.title("📊 UPI Financial Analyzer")
+st.markdown("Upload a UPI .txt file and get a complete financial breakdown.")
+
+uploaded_file = st.file_uploader("Upload UPI transaction .txt file", type=["txt"])
 
 if uploaded_file:
-    st.success("✅ File uploaded. Processing...")
-    file_content = uploaded_file.read().decode("utf-8")
+    raw_text = uploaded_file.read().decode("utf-8")
+
+    # Load Langflow flow
+    if not os.path.exists("upi_flow.json"):
+        st.error("❌ upi_flow.json file not found.")
+        st.stop()
+
+    with open("upi_flow.json") as f:
+        flow = json.load(f)
 
     try:
-        st.info("🔁 Loading flow JSON...")
-        with open("upi_flow.json", "r") as f:
-            flow_json = json.load(f)
-
-        st.info("⚙️ Running Langflow pipeline...")
-        result = run_flow_from_json(
-            flow=flow_json,
-            inputs={"text": file_content}
-        )
-
-        st.success("✅ Analysis complete!")
-        if isinstance(result, dict):
-            for k, v in result.items():
-                st.subheader(f"📌 {k.capitalize().replace('_', ' ')}")
-                if isinstance(v, dict):
-                    st.json(v)
-                else:
-                    st.write(v)
-        else:
-            st.write(result)
+        result = run_flow_from_json(flow, inputs={"text": raw_text})
     except Exception as e:
-        st.error(f"🚫 Error running flow: {e}")
+        st.error(f"❌ Error running Langflow flow: {e}")
+        st.stop()
+
+    st.subheader("📋 Analysis Result")
+    if isinstance(result, dict):
+        for k, v in result.items():
+            st.markdown(f"### {k.replace('_', ' ').capitalize()}")
+            if isinstance(v, dict):
+                st.json(v)
+            else:
+                st.write(v)
+    else:
+        st.write(result)
