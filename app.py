@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-from langflow.load import run_flow_from_json  # <- make sure langflow is installed
+from langflow.load import run_flow_from_json
 
 st.set_page_config(page_title="UPI Financial Analyzer", layout="centered")
 st.title("💸 UPI Financial Insights")
@@ -12,16 +12,18 @@ if uploaded_file:
     st.success("✅ File uploaded. Processing...")
     file_content = uploaded_file.read().decode("utf-8")
 
-    # Load Langflow flow
-    with open("upi_flow.json", "r") as f:
-        flow_json = json.load(f)
-
     try:
+        st.info("🔁 Loading flow JSON...")
+        with open("upi_flow.json", "r") as f:
+            flow_json = json.load(f)
+
+        st.info("⚙️ Running Langflow pipeline...")
         result = run_flow_from_json(
             flow=flow_json,
             inputs={"text": file_content}
         )
-        # Display outputs
+
+        st.success("✅ Analysis complete!")
         if isinstance(result, dict):
             for k, v in result.items():
                 st.subheader(f"📌 {k.capitalize().replace('_', ' ')}")
