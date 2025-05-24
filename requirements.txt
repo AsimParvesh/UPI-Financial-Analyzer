@@ -1,0 +1,4 @@
+streamlit
+langflow>=0.6.6
+pandas
+openai
