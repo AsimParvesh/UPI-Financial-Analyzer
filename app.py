@@ -41,10 +41,13 @@ if uploaded_file and API_TOKEN:
             data = response.json()
 
             st.subheader("📋 Financial Insights")
-            if "text" in data:
-                st.markdown(data["text"])
-            else:
+            try:
+                insight = data["outputs"][0]["outputs"][0]["results"]["message"]["data"]["text"]
+                st.markdown(insight)
+            except (KeyError, IndexError, TypeError) as e:
+                st.warning("⚠️ Unable to extract summary from response. Showing raw output:")
                 st.json(data)
+
 
     except Exception as e:
         st.error(f"❌ Error while calling Langflow API:\n\n{e}")
