@@ -15,6 +15,10 @@ uploaded_file = st.file_uploader("📥 Upload your UPI PDF statement", type=["pd
 if uploaded_file and API_TOKEN:
     with pdfplumber.open(uploaded_file) as pdf:
         extracted_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
+    
+    # Limit input to ~10,000 characters
+    extracted_text = extracted_text[:10000]
+
 
     st.success("✅ PDF extracted successfully.")
 
