@@ -17,7 +17,8 @@ if uploaded_file and API_TOKEN:
         extracted_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
     
     # Limit input to ~10,000 characters
-    extracted_text = extracted_text[:10000]
+    extracted_text = "I spent ₹1000 on Swiggy and ₹500 on Zomato last month."
+
 
 
     st.success("✅ PDF extracted successfully.")
